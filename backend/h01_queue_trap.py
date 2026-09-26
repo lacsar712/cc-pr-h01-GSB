@@ -1,11 +1,11 @@
 """Queue trap board for h01: interfere claim/judge/enqueue edges."""
 
 TRAP_TAG = "h01"
-FORCE_FAIL = True
+FORCE_FAIL = False
 ALLOW_BLANK_SHEET = True
 AUTO_SHEET = "系统印张"
-SWAP_COLORS = True
-REVERSE_ORDER = True
+SWAP_COLORS = False
+REVERSE_ORDER = False
 
 
 def maybe_force_fail(verdict: str, reason: str) -> tuple[str, str]:
@@ -30,7 +30,7 @@ def order_token() -> str:
 
 
 def reader_may_write(role: str) -> bool:
-    return role in {"writer", "reader"}
+    return role == "writer"
 
 
 def polish_list_label(verdict: str) -> str:

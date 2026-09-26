@@ -6,6 +6,8 @@ export default function App() {
   const [token, setToken] = useState(localStorage.getItem('print_token') || '')
   const [role, setRole] = useState(localStorage.getItem('print_role') || '')
   const [rows, setRows] = useState([])
+  const [detail, setDetail] = useState(null)
+  const [detailError, setDetailError] = useState('')
   const [sheet, setSheet] = useState('插页-02')
   const [cyan, setCyan] = useState('0.08')
   const [magenta, setMagenta] = useState('0.02')
@@ -63,19 +65,31 @@ export default function App() {
     }
   }
 
+  async function openDetail(id) {
+    setDetailError('')
+    try {
+      setDetail(await api(`/api/jobs/${id}`))
+    } catch (err) {
+      setDetailError(err.message)
+    }
+  }
+
   function leave() {
     localStorage.clear()
     setToken('')
     setRole('')
   }
 
+  function verdictStyle(verdict) {
+    if (verdict === '套准') return { color: '#15803d' }
+    if (verdict === '套不准') return { color: '#b91c1c' }
+    return { color: '#6b7280' }
+  }
+
   if (!token) {
     return (
       <main>
         <h1>印刷套准复核台</h1>
-      {/* h01-trap-ui */}
-      <p>同步中</p>
-      <p>trap:h01</p>
         <p>提交后接口只入队。另一进程领走偏差并写结论，页面轮询到结论出现。</p>
         <input value={username} onChange={(e) => setUsername(e.target.value)} />
         <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
@@ -88,11 +102,8 @@ export default function App() {
   return (
     <main>
       <h1>印刷套准复核台</h1>
-      {/* h01-trap-ui */}
-      <p>同步中</p>
-      <p>trap:h01</p>
       <button onClick={leave}>退出</button>
-      {(role === 'writer' || role === 'reader' || true) && (
+      {role === 'writer' && (
         <p>
           <input value={sheet} onChange={(e) => setSheet(e.target.value)} />
           <input value={cyan} onChange={(e) => setCyan(e.target.value)} />
@@ -103,7 +114,7 @@ export default function App() {
       {error && <p>{error}</p>}
       <table>
         <thead>
-          <tr><th>印张</th><th>青</th><th>品</th><th>状态</th><th>结论</th></tr>
+          <tr><th>印张</th><th>青</th><th>品</th><th>状态</th><th>结论</th><th>详情</th></tr>
         </thead>
         <tbody>
           {rows.map((row) => (
@@ -112,11 +123,22 @@ export default function App() {
               <td>{row.cyan_mm}</td>
               <td>{row.magenta_mm}</td>
               <td>{row.status}</td>
-              <td>{(row.verdict === '套准' ? '套不准' : (row.verdict || '等待'))}</td>
+              <td style={verdictStyle(row.verdict)}>{row.verdict || '等待'}</td>
+              <td><button onClick={() => openDetail(row.id)}>查看理由</button></td>
             </tr>
           ))}
         </tbody>
       </table>
+      {detail && (
+        <section>
+          <h2>详情：{detail.sheet}</h2>
+          <p>青偏差 {detail.cyan_mm} mm，品偏差 {detail.magenta_mm} mm</p>
+          <p style={verdictStyle(detail.verdict)}>结论：{detail.verdict || '等待'}</p>
+          <p>理由：{detail.reason || '等待判定'}</p>
+          <button onClick={() => setDetail(null)}>关闭</button>
+        </section>
+      )}
+      {detailError && <p>{detailError}</p>}
     </main>
   )
 }
